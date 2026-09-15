@@ -11,10 +11,12 @@ with open("eva-data.json", "r", encoding="utf-8") as file:
 
 records = []
 country_eva_durs: defaultdict[str, float] = defaultdict(float)
+longest_eva = (0.0, None, None)
 
 for eva in eva_data:
     date_text = eva.get("date")
     duration_text = eva.get("duration")
+    country = eva.get("country")
 
     if not duration_text:
         continue
@@ -22,11 +24,15 @@ for eva in eva_data:
     hours, minutes = map(int, duration_text.split(":"))
     duration_hours = hours + minutes / 60
 
-    if (country := eva.get("country")) is not None:
+    if country is not None:
         country_eva_durs[country] += duration_hours
 
-    if date_text:
-        date = datetime.fromisoformat(date_text)
+    date = datetime.fromisoformat(date_text) if date_text else None
+
+    if duration_hours > longest_eva[0]:
+        longest_eva = (duration_hours, country or "N/A", date or "N/A")
+
+    if date is not None:
         records.append((date, duration_hours))
 
 
@@ -35,6 +41,10 @@ chosen_country = prompt_select(
     prompt="Select country to view EVA duration for",
 )
 print(f"Total EVA duration for {chosen_country}: {country_eva_durs[chosen_country]:.2f} hrs")
+print("\n---\n\nLongest individual EVA duration:")
+print(f"  Date:     {longest_eva[2]}")
+print(f"  Country:  {longest_eva[1]}")
+print(f"  Duration: {longest_eva[0]:.2f} hrs")
 
 records.sort(key=lambda record: record[0])
 
