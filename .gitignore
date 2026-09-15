@@ -1,2 +1,5 @@
+# Python-related
 .venv/
+__pycache__/
+
 cumulative_duration.png
