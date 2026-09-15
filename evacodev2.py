@@ -1,24 +1,40 @@
+from collections import defaultdict
+
 import json
 from datetime import datetime
 import matplotlib.pyplot as plt
+
+from utils import prompt_select
 
 with open("eva-data.json", "r", encoding="utf-8") as file:
     eva_data = json.load(file)
 
 records = []
+country_eva_durs: defaultdict[str, float] = defaultdict(float)
 
 for eva in eva_data:
     date_text = eva.get("date")
     duration_text = eva.get("duration")
 
-    if not date_text or not duration_text:
+    if not duration_text:
         continue
 
-    date = datetime.fromisoformat(date_text)
     hours, minutes = map(int, duration_text.split(":"))
     duration_hours = hours + minutes / 60
 
-    records.append((date, duration_hours))
+    if (country := eva.get("country")) is not None:
+        country_eva_durs[country] += duration_hours
+
+    if date_text:
+        date = datetime.fromisoformat(date_text)
+        records.append((date, duration_hours))
+
+
+chosen_country = prompt_select(
+    sorted(country_eva_durs.keys()),
+    prompt="Select country to view EVA duration for",
+)
+print(f"Total EVA duration for {chosen_country}: {country_eva_durs[chosen_country]:.2f} hrs")
 
 records.sort(key=lambda record: record[0])
 
