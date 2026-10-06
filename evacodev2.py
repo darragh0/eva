@@ -1,7 +1,8 @@
-from collections import defaultdict
-
 import json
+from collections import defaultdict
 from datetime import datetime
+from typing import Literal
+
 import matplotlib.pyplot as plt
 
 from utils import prompt_select
@@ -12,6 +13,20 @@ with open("eva-data.json", "r", encoding="utf-8") as file:
 records = []
 country_eva_durs: defaultdict[str, float] = defaultdict(float)
 longest_eva = (0.0, None, None)
+
+type DurCategory = Literal["short", "standard", "long"]
+categorized_durations: defaultdict[DurCategory, list[float]] = defaultdict(list)
+
+
+def classify_duration(duration_hours: float) -> DurCategory:
+    """Classify duration: return duration category."""
+
+    if duration_hours < 4:  # noqa: PLR2004
+        return "short"
+    if duration_hours < 7:  # noqa: PLR2004
+        return "standard"
+    return "long"
+
 
 for eva in eva_data:
     date_text = eva.get("date")
@@ -35,6 +50,8 @@ for eva in eva_data:
     if date is not None:
         records.append((date, duration_hours))
 
+    categorized_durations[classify_duration(duration_hours)].append(duration_hours)
+
 
 chosen_country = prompt_select(
     sorted(country_eva_durs.keys()),
@@ -45,6 +62,12 @@ print("\n---\n\nLongest individual EVA duration:")
 print(f"  Date:     {longest_eva[2]}")
 print(f"  Country:  {longest_eva[1]}")
 print(f"  Duration: {longest_eva[0]:.2f} hrs")
+
+print("\n---\n\nEVA duration by category:")
+total_evas = len([dur for durations in categorized_durations.values() for dur in durations])
+for category, durations in categorized_durations.items():
+    no = len(durations)
+    print(f"  {category.capitalize()}:\t{no} EVAs ({no / total_evas:.2%})")
 
 records.sort(key=lambda record: record[0])
 
